@@ -1,0 +1,13 @@
+#!/usr/bin/env galdr
+
+mod foo;
+
+mod bar {
+	pub fn number() {
+		123
+	}
+}
+
+pub fn main() {
+	dbg(foo::number() + bar::number());
+}
