@@ -1,0 +1,5 @@
+#!/usr/bin/env galdr
+
+pub fn main() {
+  dbg!("Hello from Galdr!");
+}
