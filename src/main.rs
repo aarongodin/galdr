@@ -1,21 +1,32 @@
+use anyhow::Result;
 use rune::termcolor::{ColorChoice, StandardStream};
-use rune::{Context, Diagnostics, Source, Sources, Vm};
-use std::env;
+use rune::{Context, ContextError, Diagnostics, Module, Source, Sources, Vm};
+use std::env as stdenv;
 use std::sync::Arc;
-use std::io::Error;
 
-fn main() -> Result<(), Error> {
-    let args: Vec<String> = env::args().collect();
+mod env;
+mod fetch;
+
+pub fn create_module() -> Result<Module, ContextError> {
+    let mut module = Module::with_crate("galdr")?;
+    module.function_meta(fetch::fetch)?;
+    Ok(module)
+}
+
+fn main() -> Result<()> {
+    let args: Vec<String> = stdenv::args().collect();
 
     if args.len() > 1 {
         let script_filename = &args[1];
 
-        let context = Context::with_default_modules().expect("creating rune context");
-        let runtime = Arc::new(context.runtime().expect("creating runtime memory"));
+        let mut context = Context::with_default_modules()?;
+        context.install(create_module()?)?;
+        context.install(env::create_module()?)?;
+        let runtime = Arc::new(context.runtime()?);
 
         let mut sources = Sources::new();
-        
-        sources.insert(Source::from_path(script_filename).expect("TODO panic")).expect("TODO: panic message");
+
+        sources.insert(Source::from_path(script_filename)?)?;
 
         let mut diagnostics = Diagnostics::new();
 
@@ -26,16 +37,14 @@ fn main() -> Result<(), Error> {
 
         if !diagnostics.is_empty() {
             let mut writer = StandardStream::stderr(ColorChoice::Always);
-            diagnostics.emit(&mut writer, &sources).expect("write to diagnostics");
+            diagnostics.emit(&mut writer, &sources)?;
         }
 
-        let unit = prepared.expect("preparing runtime");
-        let mut vm = Vm::new(runtime, Arc::new(unit));
-
-        vm.call(["main"], ()).expect("calling main function");
+        let mut vm = Vm::new(runtime, Arc::new(prepared?));
+        vm.call(["main"], ())?;
     } else {
         println!("Error: Please provide a script filename.");
     }
 
-    return Ok(())
+    return Ok(());
 }

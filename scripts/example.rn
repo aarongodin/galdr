@@ -1,0 +1,14 @@
+#!/usr/bin/env galdr
+
+use galdr::*;
+
+pub fn main() {
+	dbg!(galdr::env::var("EDITOR"));
+	galdr::env::set_var("EDITOR", "code");
+	dbg!(galdr::env::var("EDITOR"));
+	dbg(galdr::env::current_dir());
+
+	fetch("https://httpstat.us/200", #{
+		"method": "POST",
+	});
+}
